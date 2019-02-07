@@ -78,7 +78,6 @@
 #include <avr/pgmspace.h>
 
 #include "Dcodes.h"
-#include "AutoDeplete.h"
 
 
 #ifdef SWSPI
@@ -130,7 +129,6 @@
 #include "sound.h"
 
 #include "cmdqueue.h"
-#include "io_atmega2560.h"
 
 // Macros for bit masks
 #define BIT(b) (1<<(b))
@@ -643,8 +641,6 @@ void failstats_reset_print()
 	eeprom_update_byte((uint8_t *)EEPROM_CRASH_COUNT_Y, 0);
 	eeprom_update_byte((uint8_t *)EEPROM_FERROR_COUNT, 0);
 	eeprom_update_byte((uint8_t *)EEPROM_POWER_COUNT, 0);
-	eeprom_update_byte((uint8_t *)EEPROM_MMU_FAIL, 0);
-	eeprom_update_byte((uint8_t *)EEPROM_MMU_LOAD_FAIL, 0);
 }
 
 
@@ -691,12 +687,6 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 			eeprom_update_word((uint16_t *)EEPROM_FERROR_COUNT_TOT, 0);
 			eeprom_update_word((uint16_t *)EEPROM_POWER_COUNT_TOT, 0);
 
-			eeprom_update_word((uint16_t *)EEPROM_MMU_FAIL_TOT, 0);
-			eeprom_update_word((uint16_t *)EEPROM_MMU_LOAD_FAIL_TOT, 0);
-			eeprom_update_byte((uint8_t *)EEPROM_MMU_FAIL, 0);
-			eeprom_update_byte((uint8_t *)EEPROM_MMU_LOAD_FAIL, 0);
-
-
 			lcd_menu_statistics();
             
 			break;
@@ -722,11 +712,6 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
             eeprom_update_word((uint16_t *)EEPROM_CRASH_COUNT_Y_TOT, 0);
             eeprom_update_word((uint16_t *)EEPROM_FERROR_COUNT_TOT, 0);
             eeprom_update_word((uint16_t *)EEPROM_POWER_COUNT_TOT, 0);
-
-			eeprom_update_word((uint16_t *)EEPROM_MMU_FAIL_TOT, 0);
-			eeprom_update_word((uint16_t *)EEPROM_MMU_LOAD_FAIL_TOT, 0);
-			eeprom_update_byte((uint8_t *)EEPROM_MMU_FAIL, 0);
-			eeprom_update_byte((uint8_t *)EEPROM_MMU_LOAD_FAIL, 0);
 
 #ifdef FILAMENT_SENSOR
 			fsensor_enable();
@@ -1402,12 +1387,6 @@ void setup()
 	if (eeprom_read_word((uint16_t*)EEPROM_CRASH_COUNT_X_TOT) == 0xffff) eeprom_write_word((uint16_t*)EEPROM_CRASH_COUNT_X_TOT, 0);
 	if (eeprom_read_word((uint16_t*)EEPROM_CRASH_COUNT_Y_TOT) == 0xffff) eeprom_write_word((uint16_t*)EEPROM_CRASH_COUNT_Y_TOT, 0);
 	if (eeprom_read_word((uint16_t*)EEPROM_FERROR_COUNT_TOT) == 0xffff) eeprom_write_word((uint16_t*)EEPROM_FERROR_COUNT_TOT, 0);
-
-	if (eeprom_read_word((uint16_t*)EEPROM_MMU_FAIL_TOT) == 0xffff) eeprom_update_word((uint16_t *)EEPROM_MMU_FAIL_TOT, 0);
-	if (eeprom_read_word((uint16_t*)EEPROM_MMU_LOAD_FAIL_TOT) == 0xffff) eeprom_update_word((uint16_t *)EEPROM_MMU_LOAD_FAIL_TOT, 0);
-	if (eeprom_read_byte((uint8_t*)EEPROM_MMU_FAIL) == 0xff) eeprom_update_byte((uint8_t *)EEPROM_MMU_FAIL, 0);
-	if (eeprom_read_byte((uint8_t*)EEPROM_MMU_LOAD_FAIL) == 0xff) eeprom_update_byte((uint8_t *)EEPROM_MMU_LOAD_FAIL, 0);
-
 #ifdef SNMM
 	if (eeprom_read_dword((uint32_t*)EEPROM_BOWDEN_LENGTH) == 0x0ffffffff) { //bowden length used for SNMM
 	  int _z = BOWDEN_LENGTH;
@@ -6539,7 +6518,6 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
     #endif //FILAMENTCHANGEENABLE
 	case 601: //! M601 - Pause print
 	{
-		cmdqueue_pop_front(); //trick because we want skip this command (M601) after restore
 		lcd_pause_print();
 	}
 	break;
@@ -6913,20 +6891,16 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 		if (mmu_enabled)
 		{
 			tmp_extruder = choose_menu_P(_T(MSG_CHOOSE_FILAMENT), _T(MSG_FILAMENT));
-			if ((tmp_extruder == mmu_extruder) && mmu_fil_loaded) {
-				printf_P(PSTR("Duplicit T-code ignored.\n"));
-				return; //dont execute the same T-code twice in a row
-			}
 			st_synchronize();
 			mmu_command(MMU_CMD_T0 + tmp_extruder);
-			manage_response(true, true, MMU_TCODE_MOVE);
+			manage_response(true, true);
 		}
 	  }
 	  else if (*(strchr_pointer + index) == 'c') { //load to from bondtech gears to nozzle (nozzle should be preheated)
 	  	if (mmu_enabled) 
 		{
 			st_synchronize();
-			mmu_continue_loading();
+			mmu_command(MMU_CMD_C0);
 			mmu_extruder = tmp_extruder; //filament change is finished
 			mmu_load_to_nozzle();
 		}
@@ -6945,25 +6919,17 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
           }
           else {
               tmp_extruder = code_value();
-              if (mmu_enabled && lcd_autoDepleteEnabled())
-              {
-                  tmp_extruder = ad_getAlternative(tmp_extruder);
-              }
           }
           st_synchronize();
           snmm_filaments_used |= (1 << tmp_extruder); //for stop print
 
           if (mmu_enabled)
           {
-              if ((tmp_extruder == mmu_extruder) && mmu_fil_loaded) {
-                  printf_P(PSTR("Duplicit T-code ignored.\n"));
-                  return; //dont execute the same T-code twice in a row
-              }
               mmu_command(MMU_CMD_T0 + tmp_extruder);
 
-			  manage_response(true, true, MMU_TCODE_MOVE);
-			  mmu_continue_loading();
-			  mmu_extruder = tmp_extruder; //filament change is finished
+              manage_response(true, true);
+              mmu_command(MMU_CMD_C0);
+              mmu_extruder = tmp_extruder; //filament change is finished
 
               if (load_to_nozzle)// for single material usage with mmu
               {

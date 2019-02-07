@@ -1,33 +1,19 @@
-//! @file
+//mmu.h
 
 #include <inttypes.h>
 
 
 extern bool mmu_enabled;
-extern bool mmu_fil_loaded;
 
 extern uint8_t mmu_extruder;
 
 extern uint8_t tmp_extruder;
 
 extern int8_t mmu_finda;
-extern bool mmu_idler_sensor_detected;
-extern bool mmu_loading_flag;
 
 extern int16_t mmu_version;
 extern int16_t mmu_buildnr;
 
-extern uint16_t mmu_power_failures;
-
-#define MMU_FILAMENT_UNKNOWN 255
-
-#define MMU_NO_MOVE 0
-#define MMU_UNLOAD_MOVE 1
-#define MMU_LOAD_MOVE 2
-#define MMU_TCODE_MOVE 3
-
-#define MMU_LOAD_FEEDRATE 19.02f //mm/s
-#define MMU_LOAD_TIME_MS 2000 //should be fine tuned to load time for shortest allowed PTFE tubing and maximum loading speed
 
 #define MMU_CMD_NONE 0
 #define MMU_CMD_T0   0x10
@@ -48,7 +34,7 @@ extern uint16_t mmu_power_failures;
 #define MMU_CMD_E3   0x53
 #define MMU_CMD_E4   0x54
 #define MMU_CMD_R0   0x60
-#define MMU_CMD_S3	 0x73
+
 
 extern int mmu_puts_P(const char* str);
 
@@ -56,7 +42,6 @@ extern int mmu_printf_P(const char* format, ...);
 
 extern int8_t mmu_rx_ok(void);
 
-extern bool check_for_idler_sensor();
 
 extern void mmu_init(void);
 
@@ -69,9 +54,9 @@ extern int8_t mmu_set_filament_type(uint8_t extruder, uint8_t filament);
 
 extern void mmu_command(uint8_t cmd);
 
-extern bool mmu_get_response(uint8_t move = 0);
+extern bool mmu_get_response(void);
 
-extern void manage_response(bool move_axes, bool turn_off_nozzle, uint8_t move = 0);
+extern void manage_response(bool move_axes, bool turn_off_nozzle);
 
 extern void mmu_load_to_nozzle();
 
@@ -118,4 +103,3 @@ extern void mmu_eject_fil_1();
 extern void mmu_eject_fil_2();
 extern void mmu_eject_fil_3();
 extern void mmu_eject_fil_4();
-extern void mmu_continue_loading();
