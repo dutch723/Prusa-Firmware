@@ -1,7 +1,3 @@
-# This branch is a direct fork of Prusa's fork up to release candidates.  This branch should remain unchanged until release candidates are posted. 
-
-### Current as of 3.5.2-RC1 7 Feb 2019
-
 # Table of contents
 
 <!--ts-->

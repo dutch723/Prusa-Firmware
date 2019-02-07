@@ -284,8 +284,7 @@ void menu_draw_P<int16_t*>(char chr, const char* str, int16_t val)
 	if (text_len > 15) text_len = 15;
 	char spaces[21];
 	strcpy_P(spaces, menu_20x_space);
-	if (val <= -100) spaces[15 - text_len - 1] = 0;
-	else spaces[15 - text_len] = 0;
+	spaces[15 - text_len] = 0;
 	lcd_printf_P(menu_fmt_int3, chr, str, spaces, val);
 }
 

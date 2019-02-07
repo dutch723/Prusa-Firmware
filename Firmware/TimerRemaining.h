@@ -8,7 +8,6 @@
 
 #include "Timer.h"
 #include "Arduino.h"
-#include "system_timer.h"
 #include <limits.h>
 
 class TimerRemaining : public LongTimer
@@ -37,7 +36,7 @@ public:
     {
       if (!running()) return 0;
       if (expired()) return 0;
-      const unsigned long now = _millis();
+      const unsigned long now = millis();
       return (started() + m_period - now);
     }
     /**
