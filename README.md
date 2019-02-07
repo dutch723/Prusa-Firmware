@@ -1,3 +1,5 @@
+## This branch is a direct fork of Prusa's fork up to release candidates. This branch should remain unchanged until release candidates are posted.
+
 # Original Prusa i3 MK2 Firmware
 
 ## General instructions
